@@ -23,3 +23,14 @@ async def cmd_start(message: types.Message, state: FSMContext):
     )
     
     await message.answer(welcome_text, reply_markup=get_main_menu())
+
+@router.message(F.text == "🔍 Найти игрока")
+async def find_player(message: types.Message):
+    await message.answer(
+        "Отправь SteamID или ссылку на профиль любого игрока для быстрого просмотра:\n\n"
+        "Форматы:\n"
+        "• https://steamcommunity.com/id/username\n"
+        "• https://steamcommunity.com/profiles/7656119xxxxxxxx\n"
+        "• SteamID64: 76561198012345678\n"
+        "• Account ID: 12345678"
+    )

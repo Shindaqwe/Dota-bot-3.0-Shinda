@@ -1,89 +1,39 @@
+import os
 import asyncio
 import logging
 from aiogram import Bot, Dispatcher
+from aiogram.filters import CommandStart
+from aiogram.types import Message
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.fsm.strategy import FSMStrategy
-from aiogram.types import Update
-from aiohttp import web
-
-from config import Config
-from handlers import start, profile, friends, meta, support, quick_search
-from database import init_db
 
 # Настройка логирования
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-async def on_startup(bot: Bot, dispatcher: Dispatcher):
-    # Установка вебхука
-    webhook_url = f"https://{Config.RENDER_DOMAIN}/webhook"
-    await bot.set_webhook(webhook_url)
-    logger.info(f"Webhook set to {webhook_url}")
+# Инициализация бота
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher(storage=MemoryStorage())
 
-async def handle_webhook(request: web.Request):
-    bot: Bot = request.app['bot']
-    dispatcher: Dispatcher = request.app['dispatcher']
-    try:
-        update = Update.model_validate(await request.json(), context={"bot": bot})
-        await dispatcher.feed_update(bot, update)
-    except Exception as e:
-        logger.error(f"Error processing update: {e}")
-    return web.Response()
-
-async def ping_handler(request: web.Request):
-    return web.Response(text="pong")
-
-async def main():
-    # Инициализация бота
-    bot = Bot(token=Config.BOT_TOKEN)
-    
-    # Инициализация диспетчера
-    dispatcher = Dispatcher(
-        storage=MemoryStorage(),
-        fsm_strategy=FSMStrategy.USER_IN_CHAT
+@dp.message(CommandStart())
+async def cmd_start(message: Message):
+    welcome_text = (
+        "Привет!👋\n"
+        "Я бот анализатор матчей DotaStats\n"
+        "Мой создатель @shindaqwe\n\n"
+        "Отправь ссылку на свой Steam профиль для статистики.\n\n"
+        "Форматы ссылок:\n"
+        "• https://steamcommunity.com/id/username\n"
+        "• https://steamcommunity.com/profiles/7656119xxxxxxxx\n"
+        "• Просто SteamID (например: 76561198012345678)\n"
+        "• Или Account ID (например: 12345678)"
     )
     
-    # Регистрация роутеров
-    dispatcher.include_router(start.router)
-    dispatcher.include_router(profile.router)
-    dispatcher.include_router(friends.router)
-    dispatcher.include_router(meta.router)
-    dispatcher.include_router(support.router)
-    dispatcher.include_router(quick_search.router)
-    
-    # Инициализация базы данных
-    await init_db()
-    
-    # Создание aiohttp приложения
-    app = web.Application()
-    app['bot'] = bot
-    app['dispatcher'] = dispatcher
-    
-    # Регистрация обработчиков
-    app.router.add_post('/webhook', handle_webhook)
-    app.router.add_get('/ping', ping_handler)
-    
-    # Запуск приложения
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', Config.PORT)
-    await site.start()
-    
-    logger.info(f"Server started on port {Config.PORT}")
-    
-    # Установка вебхука при старте
-    await on_startup(bot, dispatcher)
-    
-    # Бесконечный цикл
-    try:
-        await asyncio.Event().wait()
-    except asyncio.CancelledError:
-        pass
-    finally:
-        await runner.cleanup()
+    await message.answer(welcome_text)
+
+async def main():
+    logger.info("Запуск бота...")
+    await dp.start_polling(bot)
 
 if __name__ == "__main__":
     asyncio.run(main())

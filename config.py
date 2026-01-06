@@ -23,6 +23,10 @@ class Config:
     # Настройки кэширования
     CACHE_TTL = 300  # 5 минут
     
+    # Webhook settings
+    RENDER_DOMAIN = os.getenv("RENDER_DOMAIN", "your-domain.onrender.com")
+    PORT = int(os.getenv("PORT", 10000))
+    
     @classmethod
     def validate(cls):
         """Проверяет наличие всех необходимых переменных"""
@@ -35,6 +39,8 @@ class Config:
         print("✅ Конфигурация загружена успешно")
         print(f"🤖 Bot token: {'*' * 10}{cls.BOT_TOKEN[-5:]}")
         print(f"🎮 Steam API key: {'*' * 10}{cls.STEAM_API_KEY[-5:]}")
+        print(f"🌐 Domain: {cls.RENDER_DOMAIN}")
+        print(f"🚀 Port: {cls.PORT}")
 
 # Проверяем конфигурацию при импорте
 Config.validate()
